@@ -548,3 +548,292 @@ curl "http://localhost:5000/api/v1/sentiment-comparison?tickers=AAPL,TSLA"
 ```bash
 curl "http://localhost:5000/api/v1/market-pulse?start_date=2024-01-18"
 ```
+### Stock Price Data
+
+#### `GET /api/v1/stock-price/{ticker}`
+
+Get current stock price for a ticker.
+
+**Parameters:**
+- `ticker` (path) - Stock ticker symbol (e.g., AAPL)
+
+**Example Request:**
+```bash
+curl http://localhost:5000/api/v1/stock-price/AAPL
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ticker": "AAPL",
+    "price": 182.50,
+    "previous_close": 180.25,
+    "change": 2.25,
+    "change_percent": 1.25,
+    "currency": "USD",
+    "market_state": "REGULAR",
+    "timestamp": "2026-01-18T15:30:00"
+  }
+}
+```
+
+#### `GET /api/v1/stock-history/{ticker}`
+
+Get historical stock prices.
+
+**Parameters:**
+- `ticker` (path) - Stock ticker symbol
+- `start_date` (query, required) - Start date (YYYY-MM-DD)
+- `end_date` (query, required) - End date (YYYY-MM-DD)
+- `interval` (query, optional) - Data interval (1d, 1wk, 1mo). Default: 1d
+
+**Example Request:**
+```bash
+curl "http://localhost:5000/api/v1/stock-history/AAPL?start_date=2026-01-01&end_date=2026-01-18"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "history": [
+      {
+        "date": "2026-01-02",
+        "open": 178.50,
+        "high": 182.00,
+        "low": 177.25,
+        "close": 181.00,
+        "volume": 52341200
+      }
+    ]
+  }
+}
+```
+
+#### `GET /api/v1/market-indices`
+
+Get current values for major market indices.
+
+**Example Request:**
+```bash
+curl http://localhost:5000/api/v1/market-indices
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "sp500": {
+      "value": 4850.25,
+      "change": 12.50,
+      "change_percent": 0.26,
+      "timestamp": "2026-01-18T16:00:00"
+    },
+    "nasdaq": {
+      "value": 15250.75,
+      "change": -5.25,
+      "change_percent": -0.03,
+      "timestamp": "2026-01-18T16:00:00"
+    },
+    "dow": {
+      "value": 38500.50,
+      "change": 50.25,
+      "change_percent": 0.13,
+      "timestamp": "2026-01-18T16:00:00"
+    }
+  }
+}
+```
+
+### Stock Data Management
+
+#### `POST /api/v1/stock-data/populate`
+
+Populate database with stock data from external sources (yfinance).
+
+**Query Parameters:**
+- `limit` (optional) - Maximum stocks to fetch. Default: 200
+
+**Example Request:**
+```bash
+curl -X POST "http://localhost:5000/api/v1/stock-data/populate?limit=500"
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Successfully populated 500 stocks",
+    "count": 500
+  }
+}
+```
+
+#### `POST /api/v1/stock-data/refresh`
+
+Refresh stock data cache.
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:5000/api/v1/stock-data/refresh
+```
+
+#### `GET /api/v1/stock-data/info`
+
+Get information about cached stock data.
+
+**Example Request:**
+```bash
+curl http://localhost:5000/api/v1/stock-data/info
+```
+
+### Export
+
+#### `GET /api/v1/export/posts`
+
+Export posts to CSV or JSON format.
+
+**Query Parameters:**
+- `format` (required) - Export format: csv or json
+- `ticker`, `industry`, `sector`, `sentiment`, `start_date`, `end_date` (optional) - Filter parameters
+- `limit` (optional) - Maximum posts to export. Default: 1000, Max: 10000
+
+**Example Request:**
+```bash
+curl "http://localhost:5000/api/v1/export/posts?format=csv&ticker=AAPL&start_date=2026-01-01" -o posts.csv
+```
+
+#### `GET /api/v1/export/sentiment-trends`
+
+Export sentiment trends to CSV or JSON format.
+
+**Query Parameters:**
+- `format` (required) - Export format: csv or json
+- `days` (optional) - Number of days. Default: 30
+- `ticker`, `industry`, `sector`, `start_date`, `end_date`, `granularity` (optional) - Filter parameters
+
+**Example Request:**
+```bash
+curl "http://localhost:5000/api/v1/export/sentiment-trends?format=json&days=7" -o trends.json
+```
+
+### Watchlists
+
+#### `GET /api/v1/watchlists`
+
+Get all watchlists.
+
+**Example Request:**
+```bash
+curl http://localhost:5000/api/v1/watchlists
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "watchlists": [
+      {
+        "id": 1,
+        "name": "Tech Stocks",
+        "created_at": "2026-01-18T10:00:00",
+        "tickers": ["AAPL", "MSFT", "GOOGL"]
+      }
+    ]
+  }
+}
+```
+
+#### `POST /api/v1/watchlists`
+
+Create a new watchlist.
+
+**Request Body:**
+```json
+{
+  "name": "Energy Stocks"
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:5000/api/v1/watchlists \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Energy Stocks"}'
+```
+
+#### `GET /api/v1/watchlists/{id}`
+
+Get a specific watchlist.
+
+**Example Request:**
+```bash
+curl http://localhost:5000/api/v1/watchlists/1
+```
+
+#### `PUT /api/v1/watchlists/{id}`
+
+Update a watchlist name.
+
+**Request Body:**
+```json
+{
+  "name": "Updated Name"
+}
+```
+
+#### `DELETE /api/v1/watchlists/{id}`
+
+Delete a watchlist.
+
+**Example Request:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/watchlists/1
+```
+
+#### `POST /api/v1/watchlists/{id}/tickers`
+
+Add a ticker to a watchlist.
+
+**Request Body:**
+```json
+{
+  "ticker": "TSLA"
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:5000/api/v1/watchlists/1/tickers \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "TSLA"}'
+```
+
+#### `DELETE /api/v1/watchlists/{id}/tickers/{ticker}`
+
+Remove a ticker from a watchlist.
+
+**Example Request:**
+```bash
+curl -X DELETE http://localhost:5000/api/v1/watchlists/1/tickers/TSLA
+```
+
+### Updated Fetch Posts Endpoint
+
+#### `GET /api/v1/fetch-posts`
+
+**New Parameters:**
+- `start_date` (optional) - Start date for historical fetch (YYYY-MM-DD)
+- `end_date` (optional) - End date for historical fetch (YYYY-MM-DD)
+- `max_results` - Default changed to 100, max 500 (was 10/100)
+
+**Example Request (Historical):**
+```bash
+curl "http://localhost:5000/api/v1/fetch-posts?max_results=200&start_date=2026-01-01&end_date=2026-01-15"
+```

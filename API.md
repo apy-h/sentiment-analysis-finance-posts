@@ -508,6 +508,8 @@ Currently, there are no rate limits enforced. This may change in future versions
 
 ---
 
+<!-- TODO: where and why are these maintained? If everything works, get rid of them -->
+
 ## Legacy Endpoints (Deprecated)
 
 The following endpoints are maintained for backward compatibility but may be removed in future versions:

@@ -1,5 +1,6 @@
 Flask==3.0.0
 flask-cors==4.0.0
+gunicorn==21.2.0
 transformers>=4.48.0
 # CPU-only PyTorch (no CUDA required)
 --extra-index-url https://download.pytorch.org/whl/cpu

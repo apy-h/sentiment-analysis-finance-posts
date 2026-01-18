@@ -22,16 +22,16 @@ function App() {
   const [industryHeatmap, setIndustryHeatmap] = useState([])
   const [volumeSentiment, setVolumeSentiment] = useState([])
   const [comparisonData, setComparisonData] = useState([])
-  
+
   const [loading, setLoading] = useState(false)
   const [marketPulseLoading, setMarketPulseLoading] = useState(false)
   const [error, setError] = useState(null)
-  
+
   // Filter options
   const [tickers, setTickers] = useState([])
   const [industries, setIndustries] = useState([])
   const [sectors, setSectors] = useState([])
-  
+
   // Selected filters
   const [selectedTickers, setSelectedTickers] = useState([])
   const [selectedIndustries, setSelectedIndustries] = useState([])
@@ -40,11 +40,12 @@ function App() {
   const [endDate, setEndDate] = useState('')
   const [granularity, setGranularity] = useState('day')
   const [sentiment, setSentiment] = useState('')
-  
+
   // View state
   const [activeView, setActiveView] = useState('overview')
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+  // Use relative URLs in production, localhost in development
+  const API_BASE = import.meta.env.VITE_API_BASE !== undefined ? import.meta.env.VITE_API_BASE : 'http://localhost:5000'
 
   useEffect(() => {
     loadFilterOptions()
@@ -80,7 +81,7 @@ function App() {
 
   const buildFilterParams = () => {
     const params = new URLSearchParams()
-    
+
     if (selectedTickers.length === 1) {
       params.append('ticker', selectedTickers[0])
     }
@@ -100,14 +101,14 @@ function App() {
       params.append('sentiment', sentiment)
     }
     params.append('granularity', granularity)
-    
+
     return params.toString()
   }
 
   const loadData = async () => {
     try {
       const filterParams = buildFilterParams()
-      
+
       const [postsRes, statsRes, trendsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/v1/posts?limit=20&${filterParams}`),
         axios.get(`${API_BASE}/api/v1/stats?${filterParams}`),
@@ -123,13 +124,13 @@ function App() {
       if (trendsRes.data.success) {
         setTrends(trendsRes.data.data.trends || [])
       }
-      
+
       // Load market pulse
       loadMarketPulse()
-      
+
       // Load additional analytics if filters allow
       loadAdditionalAnalytics()
-      
+
     } catch (err) {
       console.error('Error loading data:', err)
     }
@@ -141,7 +142,7 @@ function App() {
       const params = new URLSearchParams()
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
-      
+
       const response = await axios.get(`${API_BASE}/api/v1/market-pulse?${params}`)
       if (response.data.success) {
         setMarketPulse(response.data.data)
@@ -158,13 +159,13 @@ function App() {
       const params = new URLSearchParams()
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
-      
+
       // Load industry heatmap
       const heatmapRes = await axios.get(`${API_BASE}/api/v1/industry-heatmap?${params}`)
       if (heatmapRes.data.success) {
         setIndustryHeatmap(heatmapRes.data.data.heatmap || [])
       }
-      
+
       // Load volume-sentiment correlation
       const volumeParams = new URLSearchParams(params)
       if (selectedTickers.length === 1) {
@@ -174,7 +175,7 @@ function App() {
       if (volumeRes.data.success) {
         setVolumeSentiment(volumeRes.data.data.correlation || [])
       }
-      
+
       // Load comparison data if multiple tickers selected
       if (selectedTickers.length > 1) {
         const compParams = new URLSearchParams(params)
@@ -186,7 +187,7 @@ function App() {
       } else {
         setComparisonData([])
       }
-      
+
     } catch (err) {
       console.error('Error loading additional analytics:', err)
     }
@@ -220,11 +221,11 @@ function App() {
     setSentiment('')
   }
 
-  const hasActiveFilters = selectedTickers.length > 0 || 
-                          selectedIndustries.length > 0 || 
-                          selectedSectors.length > 0 || 
-                          startDate || 
-                          endDate || 
+  const hasActiveFilters = selectedTickers.length > 0 ||
+                          selectedIndustries.length > 0 ||
+                          selectedSectors.length > 0 ||
+                          startDate ||
+                          endDate ||
                           sentiment
 
   return (

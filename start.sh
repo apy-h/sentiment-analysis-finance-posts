@@ -16,8 +16,8 @@ cd frontend
 npm install --include=dev
 
 # Build with production API base URL (same server for SPA)
-# Since backend and frontend are on same server, use relative URLs
-export VITE_API_BASE=""
+# Use relative path for API calls - same domain, no CORS issues
+export VITE_API_BASE="/api"
 npx vite build
 
 # Return to root

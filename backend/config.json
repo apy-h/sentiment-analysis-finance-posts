@@ -1,0 +1,17 @@
+{
+  "reddit": {
+    "subreddits": [
+      "stocks",
+      "StockMarket",
+      "investing",
+      "wallstreetbets",
+      "finance"
+    ],
+    "user_agent": "finance-sentiment-rss/0.1",
+    "default_query": "stocks OR finance OR investing"
+  },
+  "server": {
+    "port": 5000,
+    "debug": false
+  }
+}

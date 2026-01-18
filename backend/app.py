@@ -4,10 +4,23 @@ from sentiment_analyzer import SentimentAnalyzer
 from reddit_rss_client import RedditRSSClient
 from database import Database
 import os
+import json
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
+
+# Load configuration
+def load_config():
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Warning: Could not load config.json: {e}")
+        return {'server': {'port': 5000, 'debug': False}}
+
+config = load_config()
 
 # Initialize components
 sentiment_analyzer = SentimentAnalyzer()
@@ -95,6 +108,6 @@ def get_trends():
     return jsonify({'trends': trends})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    port = int(os.environ.get('PORT', config.get('server', {}).get('port', 5000)))
+    debug = os.environ.get('FLASK_DEBUG', str(config.get('server', {}).get('debug', False))).lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug)

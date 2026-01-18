@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 import html
 import xml.etree.ElementTree as ET
@@ -8,19 +9,30 @@ from datetime import datetime, timedelta
 class RedditRSSClient:
     """Fetch finance posts from subreddit RSS feeds without API credentials."""
 
-    def __init__(self):
-        self.subreddits = [s.strip() for s in os.environ.get(
-            'REDDIT_SUBREDDITS', 'stocks,investing,wallstreetbets,finance'
-        ).split(',') if s.strip()]
-        self.user_agent = os.environ.get('REDDIT_USER_AGENT', 'finance-sentiment-rss/0.1')
+    def __init__(self, config_path='config.json'):
+        config = self._load_config(config_path)
+        self.subreddits = config.get('subreddits', ['stocks', 'investing', 'wallstreetbets', 'finance'])
+        self.user_agent = config.get('user_agent', 'finance-sentiment-rss/0.1')
+        self.default_query = config.get('default_query', 'stocks OR finance OR investing')
         self.base_url = 'https://www.reddit.com'
+
+    def _load_config(self, config_path):
+        """Load Reddit configuration from config.json"""
+        try:
+            full_path = os.path.join(os.path.dirname(__file__), config_path)
+            with open(full_path, 'r') as f:
+                data = json.load(f)
+                return data.get('reddit', {})
+        except Exception as e:
+            print(f"Warning: Could not load config from {config_path}: {e}")
+            return {}
 
     def fetch_posts(self, query=None, max_results=10):
         """Fetch recent posts via RSS across configured subreddits."""
         if max_results <= 0:
             return []
 
-        search_query = query or 'stocks OR finance OR investing'
+        search_query = query or self.default_query
         headers = {'User-Agent': self.user_agent}
 
         collected = []
@@ -49,8 +61,6 @@ class RedditRSSClient:
                 print(f"Error fetching RSS for r/{sub}: {exc}")
                 continue
 
-        if not collected:
-            return self._get_mock_posts(max_results)
         return collected[:max_results]
 
     def _parse_feed(self, content, subreddit):
@@ -103,31 +113,3 @@ class RedditRSSClient:
                 'link': link,
             })
         return results
-
-    def _get_mock_posts(self, count=10):
-        mock_texts = [
-            "RSS mock: Redditors bullish on tech stocks after strong earnings.",
-            "RSS mock: Inflation concerns rising; portfolios adjusting.",
-            "RSS mock: Energy sector stabilizes as oil prices level off.",
-            "RSS mock: Crypto sentiment mixed with BTC near key level.",
-            "RSS mock: Value strategies seeing renewed interest.",
-            "RSS mock: Debate on sustainability of the rally.",
-            "RSS mock: Fed hints at possible cuts later this year.",
-            "RSS mock: Gold as hedge amid uncertainty.",
-            "RSS mock: AI chips keep semis strong.",
-            "RSS mock: Emerging markets offering selective upside.",
-        ]
-
-        posts = []
-        base_time = datetime.utcnow()
-        for i in range(min(count, len(mock_texts))):
-            posts.append({
-                'id': f'reddit_rss_mock_{i+1}',
-                'text': mock_texts[i],
-                'created_at': (base_time - timedelta(minutes=i * 7)).isoformat(),
-                'author_id': f'reddit_user_{i+1}',
-                'subreddit': 'mockfinance',
-                'metrics': {},
-                'link': '',
-            })
-        return posts

@@ -1,10 +1,10 @@
 # Finance Sentiment Analysis Web App
 
-A web application that performs real-time sentiment analysis on finance-related X (Twitter) posts using FinBERT, a specialized BERT model fine-tuned for financial sentiment analysis.
+A web application that performs real-time sentiment analysis on finance-related Reddit posts using FinBERT, a specialized BERT model fine-tuned for financial sentiment analysis.
 
 ## Features
 
-- **Real-time Analysis**: Fetch and analyze finance posts from X API (with mock data fallback)
+- **Real-time Analysis**: Fetch and analyze finance posts from Reddit RSS feeds (no API keys required)
 - **FinBERT Model**: Uses ProsusAI/finbert for accurate financial sentiment classification
 - **Interactive Dashboard**: Clean UI showing sentiment statistics, trends, and recent posts
 - **Data Persistence**: SQLite database for storing analyzed posts
@@ -15,8 +15,9 @@ A web application that performs real-time sentiment analysis on finance-related 
 ### Backend (Python/Flask)
 - **Flask API** with CORS support
 - **FinBERT Model** via HuggingFace Transformers
-- **X API Client** with mock data fallback for testing
+- **Reddit RSS Client** - fetches posts without requiring API authentication
 - **SQLite Database** for data storage
+- **JSON Configuration** - easy customization via config.json
 
 ### Frontend (React/Vite)
 - **React 19** with modern hooks
@@ -81,9 +82,7 @@ The frontend will start on `http://localhost:3000`
 
 1. **Start both servers** (backend and frontend)
 2. **Open the browser** to `http://localhost:3000`
-3. **Click "Fetch New Posts"** to analyze finance posts
-   - If you have an X API token, it will fetch live posts
-   - Otherwise, it uses mock finance-related posts for testing
+3. **Click "Fetch New Posts"** to analyze finance posts from Reddit RSS feeds
 4. **View the dashboard** showing:
    - Sentiment distribution (positive/negative/neutral)
    - Recent analyzed posts with sentiment scores
@@ -95,7 +94,7 @@ The frontend will start on `http://localhost:3000`
 
 - `GET /health` - Health check
 - `POST /api/analyze` - Analyze custom text
-- `GET /api/fetch-posts` - Fetch and analyze new posts from X
+- `GET /api/fetch-posts` - Fetch and analyze new posts from Reddit RSS
 - `GET /api/posts` - Get stored analyzed posts
 - `GET /api/stats` - Get sentiment statistics
 - `GET /api/trends` - Get sentiment trends over time
@@ -121,13 +120,7 @@ curl http://localhost:5000/api/stats
 
 1. Go to [Twitter Developer Portal](https://developer.twitter.com/)
 2. Create a new app or use existing one
-3. Generate a Bearer Token
-4. Add it to your `.env` file:
-```
-X_BEARER_TOKEN=your_token_here
-```
-
-**Note**: The free tier of X API has rate limits. The app includes mock data for testing without API access.
+3. Configure subreddits in `backend/config.json` (optional - defaults provided)
 
 ## Model Information
 
@@ -146,7 +139,7 @@ The model is specifically trained on financial texts and performs better than ge
 ├── backend/
 │   ├── app.py                 # Flask application
 │   ├── sentiment_analyzer.py  # FinBERT sentiment analysis
-│   ├── x_api_client.py        # X API client with mock data
+│   ├── reddit_rss_client.py   # Reddit RSS feed client
 │   ├── database.py            # SQLite database operations
 │   └── requirements.txt       # Python dependencies
 ├── frontend/
@@ -181,7 +174,7 @@ The model is specifically trained on financial texts and performs better than ge
 
 ### Running Tests
 
-The app includes mock data for testing without X API access. Simply run both servers and click "Fetch New Posts" to see the system in action.
+Run both servers and click "Fetch New Posts" to fetch real Reddit posts via RSS feeds.
 
 ### Building for Production
 

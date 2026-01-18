@@ -45,7 +45,8 @@ function App() {
   const [activeView, setActiveView] = useState('overview')
 
   // Use relative URLs in production, localhost in development
-  const API_BASE = import.meta.env.VITE_API_BASE !== undefined ? import.meta.env.VITE_API_BASE : 'http://localhost:5000'
+  // Empty string means use relative URLs (same domain)
+  const API_BASE = import.meta.env.VITE_API_BASE === '' ? '' : (import.meta.env.VITE_API_BASE || 'http://localhost:5000')
 
   useEffect(() => {
     loadFilterOptions()

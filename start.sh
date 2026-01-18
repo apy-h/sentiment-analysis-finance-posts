@@ -16,8 +16,8 @@ cd frontend
 npm install --include=dev
 
 # Build with production API base URL (same server for SPA)
-# Use relative path for API calls - same domain, no CORS issues
-export VITE_API_BASE="/api"
+# URLs in App.jsx already include /api/v1/, so just use root
+export VITE_API_BASE=""
 npx vite build
 
 # Return to root

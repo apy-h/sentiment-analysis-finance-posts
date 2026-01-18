@@ -13,6 +13,8 @@ import SectorFilter from './components/SectorFilter'
 import DateRangeFilter from './components/DateRangeFilter'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorMessage from './components/ErrorMessage'
+import ExportMenu from './components/ExportMenu'
+import WatchlistPanel from './components/WatchlistPanel'
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -256,6 +258,22 @@ function App() {
           <button onClick={loadData} disabled={loading} className="btn-secondary">
             Refresh Data
           </button>
+          <WatchlistPanel 
+            API_BASE={API_BASE}
+            onSelectTickers={(tickers) => setSelectedTickers(tickers)}
+          />
+          <ExportMenu 
+            filters={{
+              ticker: selectedTickers,
+              industry: selectedIndustries,
+              sector: selectedSectors,
+              startDate,
+              endDate,
+              sentiment,
+              granularity
+            }}
+            API_BASE={API_BASE}
+          />
           {hasActiveFilters && (
             <button onClick={handleClearAllFilters} className="btn-clear">
               Clear All Filters

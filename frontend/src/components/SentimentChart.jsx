@@ -18,6 +18,45 @@ function SentimentChart({ trends, title = 'Sentiment Trends' }) {
     )
   }
 
+  // Helper function to format date labels
+  const formatDateLabel = (dateStr) => {
+    // Check if it's a week format (e.g., "2026-w02")
+    const weekMatch = dateStr.match(/^(\d{4})-w(\d{2})$/)
+    if (weekMatch) {
+      const year = parseInt(weekMatch[1])
+      const week = parseInt(weekMatch[2])
+      
+      // Calculate the date range for the week
+      // ISO week starts on Monday
+      const jan4 = new Date(year, 0, 4)
+      const monday = new Date(jan4)
+      monday.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (week - 1) * 7)
+      
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const startMonth = monthNames[monday.getMonth()]
+      const endMonth = monthNames[sunday.getMonth()]
+      
+      if (monday.getMonth() === sunday.getMonth()) {
+        return `${startMonth} ${monday.getDate()}-${sunday.getDate()}, ${year}`
+      } else {
+        return `${startMonth} ${monday.getDate()}-${endMonth} ${sunday.getDate()}, ${year}`
+      }
+    }
+    
+    // For daily format, convert to human-readable
+    try {
+      const date = new Date(dateStr)
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December']
+      return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+    } catch {
+      return dateStr
+    }
+  }
+
   const labels = trends.map(t => t.date).reverse()
   const positiveData = trends.map(t => t.positive || 0).reverse()
   const negativeData = trends.map(t => t.negative || 0).reverse()
@@ -63,6 +102,11 @@ function SentimentChart({ trends, title = 'Sentiment Trends' }) {
       },
       tooltip: {
         callbacks: {
+          title: (context) => {
+            const index = context[0].dataIndex
+            const dateStr = labels[index]
+            return formatDateLabel(dateStr)
+          },
           label: (context) => {
             return `${context.dataset.label}: ${context.parsed.y} posts`
           },

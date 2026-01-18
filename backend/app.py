@@ -114,8 +114,8 @@ def fetch_posts():
     """Fetch and analyze finance posts from Reddit via RSS"""
     query = request.args.get('query', 'stocks OR finance OR investing')
     try:
-        max_results = int(request.args.get('max_results', 10))
-        max_results = max(1, min(max_results, 100))
+        max_results = int(request.args.get('max_results', 100))
+        max_results = max(1, min(max_results, 500))
     except ValueError:
         return jsonify(*error_response('INVALID_PARAM', 'Invalid max_results parameter'))
 

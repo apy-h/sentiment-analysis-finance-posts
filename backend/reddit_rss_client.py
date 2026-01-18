@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import requests
 import html
 import xml.etree.ElementTree as ET
@@ -16,6 +17,29 @@ class RedditRSSClient:
         self.user_agent = config.get('user_agent', 'finance-sentiment-rss/0.1')
         self.default_query = config.get('default_query', 'stocks OR finance OR investing')
         self.base_url = 'https://www.reddit.com'
+        
+        # Content filtering patterns
+        self.filter_patterns = config.get('filter_patterns', {
+            'exclude_titles': [
+                r'daily.*discussion',
+                r'general.*discussion',
+                r'advice.*thread',
+                r'what.*are.*your.*moves',
+                r'weekend.*discussion',
+                r'discussion.*thread',
+                r'daily.*thread'
+            ],
+            'exclude_keywords': [
+                'which niche',
+                'wanted to talk to but',
+                'career advice',
+                'networking',
+                'should i',
+                'how do i become',
+                'resume',
+                'job interview'
+            ]
+        })
 
     def _load_config(self, config_path):
         """Load Reddit configuration from config.json"""
@@ -27,9 +51,82 @@ class RedditRSSClient:
         except Exception as e:
             print(f"Warning: Could not load config from {config_path}: {e}")
             return {}
+    
+    def _should_filter_post(self, title, text):
+        """
+        Determine if a post should be filtered out based on content.
+        
+        Args:
+            title: Post title
+            text: Post content
+            
+        Returns:
+            True if post should be filtered out, False otherwise
+        """
+        title_lower = title.lower()
+        text_lower = text.lower()
+        combined = f"{title_lower} {text_lower}"
+        
+        # Check title patterns
+        for pattern in self.filter_patterns.get('exclude_titles', []):
+            if re.search(pattern, title_lower, re.IGNORECASE):
+                return True
+        
+        # Check keywords in combined text
+        for keyword in self.filter_patterns.get('exclude_keywords', []):
+            if keyword.lower() in combined:
+                return True
+        
+        return False
+    
+    def _filter_by_date_range(self, posts, start_date=None, end_date=None):
+        """
+        Filter posts by date range
+        
+        Args:
+            posts: List of post dictionaries
+            start_date: ISO format start date (YYYY-MM-DD)
+            end_date: ISO format end date (YYYY-MM-DD)
+            
+        Returns:
+            Filtered list of posts
+        """
+        if not start_date and not end_date:
+            return posts
+        
+        filtered = []
+        for post in posts:
+            try:
+                # Parse post creation date
+                post_date = parser.isoparse(post.get('created_at', ''))
+                post_date_str = post_date.date().isoformat()
+                
+                # Check against date range
+                if start_date and post_date_str < start_date:
+                    continue
+                if end_date and post_date_str > end_date:
+                    continue
+                
+                filtered.append(post)
+            except Exception as e:
+                # If date parsing fails, include the post
+                filtered.append(post)
+        
+        return filtered
 
-    def fetch_posts(self, query=None, max_results=10):
-        """Fetch recent posts via RSS across configured subreddits."""
+    def fetch_posts(self, query=None, max_results=10, start_date=None, end_date=None):
+        """
+        Fetch recent posts via RSS across configured subreddits.
+        
+        Args:
+            query: Search query string
+            max_results: Maximum number of posts to fetch
+            start_date: ISO format start date (YYYY-MM-DD) for filtering
+            end_date: ISO format end date (YYYY-MM-DD) for filtering
+            
+        Returns:
+            List of post dictionaries
+        """
         if max_results <= 0:
             return []
 
@@ -50,11 +147,29 @@ class RedditRSSClient:
                 'sort': 'new',
                 'limit': per_sub_limit,
             }
+            
+            # Add time filter if dates are specified
+            if start_date or end_date:
+                # Reddit RSS doesn't support exact date ranges via API
+                # We'll fetch more posts and filter them on our side
+                # Use 't' parameter for time windows
+                params['t'] = 'all'  # Get posts from all time
+                params['limit'] = min(100, per_sub_limit * 3)  # Fetch more to filter
+            
             try:
                 resp = requests.get(url, headers=headers, params=params, timeout=10)
                 resp.raise_for_status()
                 posts = self._parse_feed(resp.content, sub)
+                
+                # Filter by date range if specified
+                if start_date or end_date:
+                    posts = self._filter_by_date_range(posts, start_date, end_date)
+                
                 for post in posts:
+                    # Apply content filtering
+                    if self._should_filter_post(post.get('title', ''), post.get('text', '')):
+                        continue
+                    
                     if len(collected) >= max_results:
                         break
                     collected.append(post)

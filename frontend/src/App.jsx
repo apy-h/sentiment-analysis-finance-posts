@@ -13,6 +13,9 @@ import SectorFilter from './components/SectorFilter'
 import DateRangeFilter from './components/DateRangeFilter'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorMessage from './components/ErrorMessage'
+import ExportMenu from './components/ExportMenu'
+import WatchlistPanel from './components/WatchlistPanel'
+import FetchControls from './components/FetchControls'
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -194,12 +197,18 @@ function App() {
     }
   }
 
-  const fetchNewPosts = async () => {
+  const fetchNewPosts = async (params = {}) => {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await axios.get(`${API_BASE}/api/v1/fetch-posts?max_results=15`)
+      const { limit = 100, start_date, end_date } = params
+      const queryParams = new URLSearchParams()
+      queryParams.append('max_results', limit)
+      if (start_date) queryParams.append('start_date', start_date)
+      if (end_date) queryParams.append('end_date', end_date)
+      
+      const response = await axios.get(`${API_BASE}/api/v1/fetch-posts?${queryParams}`)
       if (response.data.success) {
         await loadData()
         await loadFilterOptions()
@@ -237,17 +246,33 @@ function App() {
       </header>
 
       <div className="controls">
-        <button onClick={fetchNewPosts} disabled={loading} className="btn-primary">
-          {loading ? 'Fetching & Analyzing...' : 'Fetch New Posts'}
-        </button>
-        <button onClick={loadData} disabled={loading} className="btn-secondary">
-          Refresh Data
-        </button>
-        {hasActiveFilters && (
-          <button onClick={handleClearAllFilters} className="btn-clear">
-            Clear All Filters
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <FetchControls onFetch={fetchNewPosts} loading={loading} />
+          <button onClick={loadData} disabled={loading} className="btn-secondary">
+            Refresh Data
           </button>
-        )}
+          <WatchlistPanel 
+            API_BASE={API_BASE}
+            onSelectTickers={(tickers) => setSelectedTickers(tickers)}
+          />
+          <ExportMenu 
+            filters={{
+              ticker: selectedTickers,
+              industry: selectedIndustries,
+              sector: selectedSectors,
+              startDate,
+              endDate,
+              sentiment,
+              granularity
+            }}
+            API_BASE={API_BASE}
+          />
+          {hasActiveFilters && (
+            <button onClick={handleClearAllFilters} className="btn-clear">
+              Clear All Filters
+            </button>
+          )}
+        </div>
       </div>
 
       <ErrorMessage error={error} onRetry={fetchNewPosts} />

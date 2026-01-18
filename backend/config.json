@@ -9,7 +9,28 @@
       "options"
     ],
     "user_agent": "finance-sentiment-dashboard/2.0",
-    "default_query": "stocks OR finance OR investing OR trading"
+    "default_query": "stocks OR finance OR investing OR trading",
+    "filter_patterns": {
+      "exclude_titles": [
+        "daily.*discussion",
+        "general.*discussion",
+        "advice.*thread",
+        "what.*are.*your.*moves",
+        "weekend.*discussion",
+        "discussion.*thread",
+        "daily.*thread"
+      ],
+      "exclude_keywords": [
+        "which niche",
+        "wanted to talk to but",
+        "career advice",
+        "networking",
+        "should i",
+        "how do i become",
+        "resume",
+        "job interview"
+      ]
+    }
   },
   "sentiment": {
     "model": "ProsusAI/finbert",

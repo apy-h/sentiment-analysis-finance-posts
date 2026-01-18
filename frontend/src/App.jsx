@@ -15,6 +15,7 @@ import LoadingSpinner from './components/LoadingSpinner'
 import ErrorMessage from './components/ErrorMessage'
 import ExportMenu from './components/ExportMenu'
 import WatchlistPanel from './components/WatchlistPanel'
+import FetchControls from './components/FetchControls'
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -42,7 +43,6 @@ function App() {
   const [endDate, setEndDate] = useState('')
   const [granularity, setGranularity] = useState('day')
   const [sentiment, setSentiment] = useState('')
-  const [fetchLimit, setFetchLimit] = useState(100)
   
   // View state
   const [activeView, setActiveView] = useState('overview')
@@ -195,13 +195,18 @@ function App() {
     }
   }
 
-  const fetchNewPosts = async (customLimit = null) => {
+  const fetchNewPosts = async (params = {}) => {
     setLoading(true)
     setError(null)
 
     try {
-      const limit = customLimit || 100
-      const response = await axios.get(`${API_BASE}/api/v1/fetch-posts?max_results=${limit}`)
+      const { limit = 100, start_date, end_date } = params
+      const queryParams = new URLSearchParams()
+      queryParams.append('max_results', limit)
+      if (start_date) queryParams.append('start_date', start_date)
+      if (end_date) queryParams.append('end_date', end_date)
+      
+      const response = await axios.get(`${API_BASE}/api/v1/fetch-posts?${queryParams}`)
       if (response.data.success) {
         await loadData()
         await loadFilterOptions()
@@ -240,21 +245,7 @@ function App() {
 
       <div className="controls">
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-            <label htmlFor="fetch-limit" style={{ fontSize: '14px' }}>Posts to fetch:</label>
-            <input
-              id="fetch-limit"
-              type="number"
-              min="1"
-              max="500"
-              value={fetchLimit}
-              onChange={(e) => setFetchLimit(Math.max(1, Math.min(500, parseInt(e.target.value) || 100)))}
-              style={{ width: '80px', padding: '5px' }}
-            />
-          </div>
-          <button onClick={() => fetchNewPosts(fetchLimit)} disabled={loading} className="btn-primary">
-            {loading ? 'Fetching & Analyzing...' : 'Fetch New Posts'}
-          </button>
+          <FetchControls onFetch={fetchNewPosts} loading={loading} />
           <button onClick={loadData} disabled={loading} className="btn-secondary">
             Refresh Data
           </button>

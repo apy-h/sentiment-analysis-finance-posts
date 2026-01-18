@@ -126,9 +126,13 @@ def fetch_posts():
         max_results = max(1, min(max_results, 500))
     except ValueError:
         return jsonify(*error_response('INVALID_PARAM', 'Invalid max_results parameter'))
+    
+    # Get optional date range parameters
+    start_date = validate_date_param(request.args.get('start_date'), 'start_date')
+    end_date = validate_date_param(request.args.get('end_date'), 'end_date')
 
     try:
-        posts = reddit_client.fetch_posts(query, max_results)
+        posts = reddit_client.fetch_posts(query, max_results, start_date, end_date)
         analyzed_posts = []
 
         for post in posts:

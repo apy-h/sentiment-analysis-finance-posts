@@ -58,37 +58,6 @@ price_data_provider = PriceDataProvider()
 export_service = ExportService()
 watchlist_repo = WatchlistRepository()
 
-# Legacy endpoints (backward compatibility)
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
-
-@app.route('/api/analyze', methods=['POST'])
-def analyze_text_legacy():
-    """Legacy analyze endpoint - redirects to v1"""
-    return analyze_text()
-
-@app.route('/api/fetch-posts', methods=['GET'])
-def fetch_posts_legacy():
-    """Legacy fetch posts endpoint - redirects to v1"""
-    return fetch_posts()
-
-@app.route('/api/posts', methods=['GET'])
-def get_posts_legacy():
-    """Legacy get posts endpoint - redirects to v1"""
-    return get_posts()
-
-@app.route('/api/stats', methods=['GET'])
-def get_stats_legacy():
-    """Legacy stats endpoint - redirects to v1"""
-    return get_stats()
-
-@app.route('/api/trends', methods=['GET'])
-def get_trends_legacy():
-    """Legacy trends endpoint - redirects to v1"""
-    return get_trends()
-
 # V1 API Endpoints
 @app.route('/api/v1/health', methods=['GET'])
 def health_check_v1():
@@ -126,7 +95,7 @@ def analyze_text():
 def fetch_posts():
     """Fetch and analyze finance posts from Reddit via RSS"""
     query = request.args.get('query', 'stocks OR finance OR investing')
-    
+
     # Validate max_results parameter
     max_results_param = request.args.get('max_results', '100')
     try:
@@ -134,7 +103,7 @@ def fetch_posts():
         max_results = max(1, min(max_results, 500))
     except (ValueError, TypeError):
         max_results = 100  # Use default if invalid
-    
+
     # Get optional date range parameters
     try:
         start_date = validate_date_param(request.args.get('start_date'), 'start_date')
@@ -509,10 +478,10 @@ def get_stock_history(ticker):
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
         interval = request.args.get('interval', '1d')
-        
+
         if not start_date or not end_date:
             return jsonify(*error_response('MISSING_PARAM', 'start_date and end_date are required'))
-        
+
         history = price_data_provider.get_historical_prices(ticker, start_date, end_date, interval)
         if history:
             return jsonify(success_response({'history': history}))
@@ -554,7 +523,7 @@ def populate_stock_data():
     try:
         limit = int(request.args.get('limit', 200))
         stocks = stock_data_provider.fetch_popular_stocks(limit)
-        
+
         # Save to database
         for stock in stocks:
             db.tickers.save_ticker(
@@ -563,7 +532,7 @@ def populate_stock_data():
                 stock.get('sector'),
                 stock.get('industry')
             )
-        
+
         return jsonify(success_response({
             'message': f'Successfully populated {len(stocks)} stocks',
             'count': len(stocks)
@@ -576,7 +545,7 @@ def export_posts():
     """Export posts to CSV or JSON"""
     try:
         format_type = request.args.get('format', 'csv').lower()
-        
+
         # Get filter parameters
         ticker = request.args.get('ticker')
         industry = request.args.get('industry')
@@ -589,7 +558,7 @@ def export_posts():
         start_date = validate_date_param(request.args.get('start_date'))
         end_date = validate_date_param(request.args.get('end_date'))
         limit = int(request.args.get('limit', 1000))
-        
+
         # Get filtered posts
         posts = db.posts.get_posts_filtered(
             ticker=ticker,
@@ -601,7 +570,7 @@ def export_posts():
             limit=min(limit, 10000),
             offset=0
         )
-        
+
         if format_type == 'csv':
             csv_data = export_service.export_posts_to_csv(posts)
             return Response(
@@ -618,7 +587,7 @@ def export_posts():
             )
         else:
             return jsonify(*error_response('INVALID_FORMAT', 'Format must be csv or json'))
-            
+
     except ValueError as e:
         return jsonify(*error_response('INVALID_PARAM', str(e)))
     except Exception as e:
@@ -630,7 +599,7 @@ def export_sentiment_trends():
     try:
         format_type = request.args.get('format', 'csv').lower()
         days = int(request.args.get('days', 30))
-        
+
         ticker = request.args.get('ticker')
         industry = request.args.get('industry')
         sector = request.args.get('sector')
@@ -641,7 +610,7 @@ def export_sentiment_trends():
             ['day', 'week'],
             'granularity'
         )
-        
+
         trends = db.analytics.get_sentiment_trends(
             days=days,
             ticker=ticker,
@@ -651,7 +620,7 @@ def export_sentiment_trends():
             end_date=end_date,
             granularity=granularity
         )
-        
+
         if format_type == 'csv':
             csv_data = export_service.export_sentiment_trends_to_csv(trends)
             return Response(
@@ -668,7 +637,7 @@ def export_sentiment_trends():
             )
         else:
             return jsonify(*error_response('INVALID_FORMAT', 'Format must be csv or json'))
-            
+
     except ValueError as e:
         return jsonify(*error_response('INVALID_PARAM', str(e)))
     except Exception as e:
@@ -683,13 +652,13 @@ def manage_watchlists():
             return jsonify(success_response({'watchlists': watchlists}))
         except Exception as e:
             return jsonify(*error_response('WATCHLIST_ERROR', str(e), 500))
-    
+
     elif request.method == 'POST':
         try:
             data = request.get_json()
             if not data or 'name' not in data:
                 return jsonify(*error_response('INVALID_REQUEST', 'name is required'))
-            
+
             watchlist_id = watchlist_repo.create_watchlist(data['name'])
             watchlist = watchlist_repo.get_watchlist(watchlist_id)
             return jsonify(success_response(watchlist), 201)
@@ -708,13 +677,13 @@ def manage_watchlist(watchlist_id):
                 return jsonify(*error_response('NOT_FOUND', 'Watchlist not found', 404))
         except Exception as e:
             return jsonify(*error_response('WATCHLIST_ERROR', str(e), 500))
-    
+
     elif request.method == 'PUT':
         try:
             data = request.get_json()
             if not data or 'name' not in data:
                 return jsonify(*error_response('INVALID_REQUEST', 'name is required'))
-            
+
             updated = watchlist_repo.update_watchlist(watchlist_id, data['name'])
             if updated:
                 watchlist = watchlist_repo.get_watchlist(watchlist_id)
@@ -723,7 +692,7 @@ def manage_watchlist(watchlist_id):
                 return jsonify(*error_response('NOT_FOUND', 'Watchlist not found', 404))
         except Exception as e:
             return jsonify(*error_response('WATCHLIST_ERROR', str(e), 500))
-    
+
     elif request.method == 'DELETE':
         try:
             deleted = watchlist_repo.delete_watchlist(watchlist_id)
@@ -741,7 +710,7 @@ def add_ticker_to_watchlist(watchlist_id):
         data = request.get_json()
         if not data or 'ticker' not in data:
             return jsonify(*error_response('INVALID_REQUEST', 'ticker is required'))
-        
+
         added = watchlist_repo.add_ticker_to_watchlist(watchlist_id, data['ticker'])
         if added:
             return jsonify(success_response({'message': 'Ticker added to watchlist'}))
@@ -761,6 +730,7 @@ def remove_ticker_from_watchlist(watchlist_id, ticker):
             return jsonify(*error_response('NOT_FOUND', 'Ticker not found in watchlist', 404))
     except Exception as e:
         return jsonify(*error_response('WATCHLIST_ERROR', str(e), 500))
+
 # Serve React App (SPA catch-all route)
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
